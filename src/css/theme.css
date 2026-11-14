@@ -1,0 +1,17 @@
+/* ---------- theme tokens: linen (from the django-react template) ---------- */
+
+:root {
+  color-scheme: light;
+  --bg: #f4f1ec;
+  --bg-elev: #fbfaf7;
+  --surface: #ece8e1;
+  --text: #3a3835;
+  --text-strong: #23211f;
+  --muted: #77726a;
+  --border: rgba(58, 56, 53, 0.12);
+  --hover: rgba(58, 56, 53, 0.05);
+  --accent: #7a6a56;
+  --accent-hover: #66584a;
+  --accent-soft: rgba(122, 106, 86, 0.12);
+  --shadow: 0 6px 20px rgba(58, 56, 53, 0.06);
+}

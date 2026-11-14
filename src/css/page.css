@@ -1,0 +1,40 @@
+/* shared styles for simple pages (errors, plan) */
+
+.page-container {
+  width: 100%;
+  padding: 1.5rem clamp(1rem, 3vw, 2.5rem);
+}
+
+.page-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.page-text {
+  color: var(--muted);
+}
+
+.page-button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.page-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
