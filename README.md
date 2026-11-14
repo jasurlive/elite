@@ -2,6 +2,11 @@
 
 My house in 3D. Walk through each room in first person, orbit the whole home from outside, or open the 2D floor plan, which is generated from the same data.
 
+<img width="70%" alt="image" src="https://github.com/user-attachments/assets/25ce6e0c-bc03-4bf0-b21d-4741ea5d5695" />
+
+<img width="40%" alt="image" src="https://github.com/user-attachments/assets/aac97055-62c0-4374-81c3-2ace38f7a6e0" />
+
+
 ## Run
 
 ```bash
