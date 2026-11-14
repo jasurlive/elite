@@ -183,7 +183,7 @@ button.menu-item {
   z-index: 9;
 }
 
-.menu-views {
+.menu-flyout {
   position: fixed;
   z-index: 11;
   display: grid;
@@ -223,18 +223,29 @@ button.menu-item {
 }
 
 @media (min-width: 769px) {
+  .menu-flyout {
+    left: calc(var(--menu-w) + 10px);
+  }
+
   .menu-views {
     top: 112px; /* next to the Views item */
-    left: calc(var(--menu-w) + 10px);
     min-width: 190px;
+  }
+
+  .menu-settings {
+    bottom: 10px; /* next to the Settings item */
+    width: 320px;
   }
 }
 
 @media (max-width: 768px) {
-  .menu-views {
+  .menu-flyout {
     left: 10px;
     right: 10px;
     bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+
+  .menu-views {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -261,4 +272,114 @@ button.menu-item {
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
+}
+
+/* ---------- settings: controls help ---------- */
+
+.menu-settings {
+  gap: 14px;
+  padding: 14px 16px;
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+}
+
+.help-title {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.help-rows {
+  display: grid;
+  gap: 6px;
+}
+
+.help-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.help-row dt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.help-row dd {
+  color: var(--text);
+  text-align: right;
+}
+
+.help-row kbd {
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-strong);
+  background: var(--hover);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+/* touch-only devices have no keyboard: skip the shortcuts */
+@media (hover: none) and (pointer: coarse) {
+  .help-keyboard {
+    display: none;
+  }
+}
+
+/* on/off row at the top of the settings panel (fullscreen) */
+.settings-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin: -4px -6px 0;
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--text-strong);
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.settings-switch:hover {
+  background: var(--hover);
+}
+
+.settings-knob {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  margin-left: auto;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  transition: background-color 0.2s;
+}
+
+.settings-knob::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  transition: translate 0.2s;
+}
+
+.settings-switch[aria-checked="true"] .settings-knob {
+  background: var(--accent);
+}
+
+.settings-switch[aria-checked="true"] .settings-knob::after {
+  translate: 16px 0;
 }

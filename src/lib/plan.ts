@@ -24,7 +24,13 @@ export type Opening =
   | { kind: 'slide'; at: number; width: number }
   | { kind: 'door'; at: number; width: number; hinge: 'start' | 'end'; side: 1 | -1; glazed?: boolean; mirror?: boolean }
 
-export type WallDef = { a: Vec2; b: Vec2; t: number; height?: number; openings?: Opening[] }
+// facade: brick skin on the outside face of a wall
+// side: which face looks out (same convention as a door's side), from/to: stretch along the wall (default: all of it)
+export type Brick = 'red' | 'buff'
+export type Facade = { side: 1 | -1; brick: Brick; from?: number; to?: number }
+
+// railing: a wrought-iron balcony railing instead of a solid wall
+export type WallDef = { a: Vec2; b: Vec2; t: number; height?: number; openings?: Opening[]; facade?: Facade; railing?: boolean }
 
 export type Floor = 'oak' | 'tile' | 'stone'
 // label: where the 2D plan writes the name, walk: rect the first-person camera stays in
@@ -61,9 +67,22 @@ const win = (at: number, width = 1200): Opening => ({ kind: 'window', at, width 
 export const WALLS: WallDef[] = [
   // exterior
   { a: [-125, -250], b: [-125, 6400], t: EXT },
-  { a: [-250, -125], b: [6250, -125], t: EXT, openings: [win(1800, 1000), door(5030, 900, 'start', 1, { glazed: true })] }, // bedroom 1 window, balcony door
-  { a: [6250, -1175], b: [11050, -1175], t: EXT, openings: [win(1417), win(3283)] }, // two kitchen windows, equal gaps
-  { a: [10925, -1300], b: [10925, 6550], t: EXT },
+  // street facade: red brick; the kitchen bay sticks out and is buff brick, like the bays on the building
+  {
+    a: [-250, -125],
+    b: [6250, -125],
+    t: EXT,
+    openings: [win(1800, 1000), door(5030, 900, 'start', 1, { glazed: true })], // bedroom 1 window, balcony door
+    facade: { side: -1, brick: 'red' },
+  },
+  {
+    a: [6250, -1175],
+    b: [11050, -1175],
+    t: EXT,
+    openings: [win(1417), win(3283)], // two kitchen windows, equal gaps
+    facade: { side: -1, brick: 'buff', from: -20, to: 4820 },
+  },
+  { a: [10925, -1300], b: [10925, 6550], t: EXT, facade: { side: -1, brick: 'buff', to: 1050 } },
   { a: [6250, 6425], b: [11050, 6425], t: EXT },
   { a: [6375, 6300], b: [6375, 10450], t: EXT },
   { a: [2200, 10325], b: [6500, 10325], t: EXT, openings: [door(3245, 900, 'start', -1)] }, // entrance
@@ -71,7 +90,7 @@ export const WALLS: WallDef[] = [
   { a: [-250, 6275], b: [2450, 6275], t: EXT },
 
   // partitions (doors open into rooms, except bath + storage which open out)
-  { a: [6325, -1300], b: [6325, 6300], t: INT, openings: [door(6570, 900, 'end', -1)] }, // hall
+  { a: [6325, -1300], b: [6325, 6300], t: INT, openings: [door(6570, 900, 'end', -1)], facade: { side: 1, brick: 'buff', to: 1050 } }, // hall
   { a: [6400, 1225], b: [10800, 1225], t: INT, openings: [{ kind: 'slide', at: 2200, width: 2800 }] }, // kitchen ↔ hall
   { a: [3175, 0], b: [3175, 6150], t: INT, openings: [door(5270, 900, 'end', 1)] }, // bedroom 1
   { a: [3250, 4375], b: [6250, 4375], t: INT, openings: [door(2200, 900, 'end', -1)] }, // bedroom 2
@@ -80,9 +99,9 @@ export const WALLS: WallDef[] = [
   { a: [4525, 6990], b: [4525, 10200], t: INT, openings: [door(1970, 800, 'end', -1)] }, // bath
   { a: [2450, 7925], b: [4450, 7925], t: INT },
 
-  // balcony parapet
-  { a: [3350, -250], b: [3900, -1250], t: 100, height: 1000 },
-  { a: [3900, -1250], b: [6250, -1250], t: 100, height: 1000 },
+  // balcony railing
+  { a: [3350, -250], b: [3900, -1250], t: 40, height: 1000, railing: true },
+  { a: [3900, -1250], b: [6250, -1250], t: 40, height: 1000, railing: true },
 ]
 
 // house centre, used to put the model at the world origin
@@ -102,14 +121,15 @@ export const LOOK_AT = 1100 // height of the point a room view looks at: slightl
 export const VIEWS: View[] = [
   { label: 'Overview', from: [13400, 19000, 16500], to: [5400, 0, 4575], wide: true },
   { label: 'Top', from: [5400, 19000, 4585], to: [5400, 0, 4575], wide: true },
+  { label: 'Facade', from: [4000, 2400, -11500], to: [5400, 1300, -600], wide: true },
   { label: 'Hall', room: 'Hall', look: [8600, 1300] },
   { label: 'Kitchen', room: 'Kitchen', look: [6400, -900] },
   { label: 'Bedroom', room: 'Bedroom', look: [6000, 600] },
   { label: "Kids' room", room: "Kids' room", look: [1500, 0] },
   { label: 'Corridor', room: 'Corridor', look: [5425, 4450] },
-  { label: 'Bath', room: 'Bath', stand: [4150, 8500], look: [2450, 10000] },
-  { label: 'Storage', room: 'Storage', stand: [4000, 7400], look: [2450, 6600] },
-  { label: 'Balcony', room: 'Balcony', look: [4800, 500] },
+  { label: 'Bath', room: 'Bath', stand: [4150, 8500], look: [3300, 10200] },
+  { label: 'Storage', room: 'Storage', stand: [3900, 6800], look: [2450, 7850] },
+  { label: 'Balcony', room: 'Balcony', stand: [5000, -450], look: [4300, -1250] },
 ]
 
 // the floor area you can walk in: the room's bounding box unless set (rect: x0, z0, x1, z1)

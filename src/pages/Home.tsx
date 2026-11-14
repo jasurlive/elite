@@ -23,11 +23,6 @@ export default function Home() {
       <p className="home-caption">
         <span className="home-title">Elite</span> {view.label} · {utilities ? 'with utilities' : 'no utilities'}
       </p>
-      <p className="home-hint">
-        {'room' in view
-          ? 'Drag to look around · Scroll or W A S D to walk · V views · U utilities'
-          : 'Drag to orbit · Scroll to zoom · Right-drag to pan · V views · U utilities'}
-      </p>
     </div>
   )
 }

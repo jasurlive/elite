@@ -1,3 +1,5 @@
+import { WALL_H } from './plan'
+
 // "utilities": furniture + fixtures, shown with the toggle
 // every piece = plan rect (x0, z0 → x1, z1) + height (y0 → y1) in mm, drawn as a soft box, cylinder or sphere
 
@@ -14,6 +16,8 @@ export const PALETTE = {
   charcoal: '#4f4a45',
   clay: '#b9967a',
   sage: '#8e9c82',
+  leaf: '#6b8558', // deeper green for the balcony planting
+  bloom: '#dba59f',
 }
 
 export type Color = keyof typeof PALETTE | 'glass' | 'mirror' | 'chrome'
@@ -88,19 +92,21 @@ const nightstand = (x0: number, z0: number): Piece[] => [
   round(x0 + 225, z0 + 200, 140, 760, 960, 'linenWhite'),
 ]
 
-// doors on the side that faces the room
-const wardrobe = (x0: number, z0: number, x1: number, z1: number, front: Facing): Piece[] => {
+// doors on the side that faces the room, hung in pairs; pulls meet in the middle of each pair
+const wardrobe = (x0: number, z0: number, x1: number, z1: number, front: Facing, h = 2300, pairs = 1): Piece[] => {
   const alongX = front === 'n' || front === 's'
-  const mid = alongX ? (x0 + x1) / 2 : (z0 + z1) / 2
+  const [a, b] = alongX ? [x0, x1] : [z0, z1]
   const face = { n: z0 - 25, s: z1, e: x1, w: x0 - 25 }[front]
-  const pull = (m0: number, m1: number) =>
-    alongX ? p(m0, face, m1, face + 25, 900, 1500, 'oak') : p(face, m0, face + 25, m1, 900, 1500, 'oak')
-  return [
-    p(x0, z0, x1, z1, 60, 2300, 'linenWhite', 'box', 8),
-    p(x0 + 20, z0 + 20, x1 - 20, z1 - 20, 0, 60, 'oak'),
-    pull(mid - 40, mid - 20),
-    pull(mid + 20, mid + 40),
-  ]
+  const strip = (m0: number, m1: number, y0: number, y1: number, depth: number, color: Color) =>
+    alongX ? p(m0, face, m1, face + depth, y0, y1, color) : p(face, m0, face + depth, m1, y0, y1, color)
+  const pieces = [p(x0, z0, x1, z1, 60, h, 'linenWhite', 'box', 8), p(x0 + 20, z0 + 20, x1 - 20, z1 - 20, 0, 60, 'oak')]
+  const pair = (b - a) / pairs
+  for (let i = 0; i < pairs; i++) {
+    const mid = a + (i + 0.5) * pair
+    pieces.push(strip(mid - 40, mid - 20, 900, 1500, 25, 'oak'), strip(mid + 20, mid + 40, 900, 1500, 25, 'oak'))
+    if (i > 0) pieces.push(strip(a + i * pair - 2, a + i * pair + 2, 70, h - 10, 6, 'oat')) // seam between pairs
+  }
+  return pieces
 }
 
 const chair = (x: number, z: number, f: Facing, color: Color = 'oat'): Piece[] => {
@@ -173,6 +179,31 @@ const plant = (x: number, z: number, scale = 1): Piece[] => [
   round(x, z, 280 * scale, 300 * scale, 1150 * scale, 'sage', 'sphere'),
 ]
 
+// front-loading washing machine; (x, z) = middle of its front, f = the way it faces
+const washer = (x: number, z: number, f: Facing): Piece[] => {
+  const b = local(x, z, f)
+  return [
+    b(-295, 295, -590, 0, 20, 850, 'white', 'box', 20),
+    b(-280, 280, -10, 4, 740, 830, 'stone', 'box', 4), // control panel
+    b(-210, 190, -5, 20, 210, 610, 'chrome', 'sphere'), // door ring
+    b(-170, 150, 0, 32, 250, 570, 'charcoal', 'sphere'), // glass
+  ]
+}
+
+// long low trough along the railing: a tidy row of greenery with small flowers between
+const planter = (x0: number, x1: number, z0: number, z1: number): Piece[] => {
+  const zc = (z0 + z1) / 2
+  const pieces = [p(x0, z0, x1, z1, 0, 380, 'charcoal', 'box', 12)]
+  const n = Math.round((x1 - x0) / 210)
+  const step = (x1 - x0) / n
+  for (let i = 0; i < n; i++) {
+    const x = x0 + (i + 0.5) * step
+    pieces.push(round(x, zc, 125, 330, 640, i % 2 ? 'sage' : 'leaf', 'sphere'))
+    if (i % 2) pieces.push(round(x - step / 2, zc - 30, 45, 600, 690, i % 4 === 1 ? 'bloom' : 'white', 'sphere'))
+  }
+  return pieces
+}
+
 export const FURNITURE: Piece[] = [
   // ---------- kids' room: two single beds, shared desk + bookshelf ----------
   ...bed(0, 2350, 3250, 2000, 'sage'),
@@ -196,7 +227,6 @@ export const FURNITURE: Piece[] = [
   ...nightstand(3250, 900),
   ...nightstand(3250, 3100),
   p(4100, 1500, 5300, 3300, 0, 8, 'rug', 'box', 4),
-  ...wardrobe(5650, 1800, 6250, 3400, 'w'),
   // desk by the balcony door: daylight from the side, never behind or on the screen
   p(5600, 250, 6250, 1650, 720, 750, 'oak', 'box', 8),
   ...legs(5600, 250, 6250, 1650, 720, 'oak', 30, 30),
@@ -236,7 +266,10 @@ export const FURNITURE: Piece[] = [
   ...plant(10450, 6000),
 
   // ---------- kitchen ----------
-  p(6400, -1050, 10100, -450, 100, 870, 'linenWhite', 'box', 6),
+  // base units, with the washing machine built in next to the sink (shares its plumbing)
+  p(6400, -1050, 8980, -450, 100, 870, 'linenWhite', 'box', 6),
+  p(9580, -1050, 10100, -450, 100, 870, 'linenWhite', 'box', 6),
+  ...washer(9280, -450, 's'),
   p(6420, -1030, 10080, -470, 0, 100, 'stone'),
   p(6400, -1050, 10100, -430, 870, 910, 'oak', 'box', 6),
   round(7300, -750, 260, 910, 915, 'charcoal'),
@@ -253,30 +286,24 @@ export const FURNITURE: Piece[] = [
   ...legs(5900, 8200, 6250, 9700, 120, 'oak', 30, 30),
   p(6230, 8400, 6250, 9500, 1100, 1900, 'mirror'),
 
-  // ---------- storage + make-up (old wc) ----------
-  ...bookshelf(2450, 6350, 7850, 400, 2200),
-  // make-up table + stool
-  p(3050, 7400, 4250, 7850, 720, 760, 'oak', 'box', 8),
-  ...legs(3050, 7400, 4250, 7850, 720, 'oak', 30, 30),
-  round(3650, 7100, 200, 0, 460, 'sand'),
-  round(3650, 7820, 120, 1100, 1350, 'linenWhite'),
+  // ---------- storage (old wc): L of floor-to-ceiling cupboards, west + south walls; door on the cut stays clear ----------
+  ...wardrobe(2450, 6350, 3050, 7850, 'e', WALL_H - 5, 2),
+  ...wardrobe(3050, 7250, 4450, 7850, 'n', WALL_H - 5, 2),
 
-  // ---------- bath: walk-in shower + wc ----------
-  p(2450, 9300, 3400, 10200, 0, 40, 'white', 'box', 8),
-  p(3380, 9300, 3400, 10200, 40, 2000, 'glass'),
-  // wall-hung wc with built-in cistern
-  p(2450, 8450, 2620, 9050, 0, 1100, 'linenWhite', 'box', 6),
-  p(2620, 8580, 3150, 8920, 260, 640, 'white', 'box', 140),
+  // ---------- bath: open walk-in shower (no glass) bottom-right, wc on the left wall facing it ----------
+  p(3500, 9400, 4450, 10200, 0, 40, 'white', 'box', 8),
+  round(4380, 9800, 18, 1100, 2050, 'chrome'), // shower riser + rain head
+  round(4250, 9800, 140, 2050, 2070, 'chrome'),
+  // wall-hung wc, built-in cistern behind it
+  p(2450, 9500, 2620, 10100, 0, 1100, 'linenWhite', 'box', 6),
+  p(2620, 9630, 3150, 9970, 260, 640, 'white', 'box', 140),
   // vanity + mirror
   p(3250, 8000, 4150, 8480, 450, 820, 'oak', 'box', 8),
   p(3400, 8050, 4000, 8430, 820, 900, 'white', 'box', 40),
   p(3300, 8000, 4100, 8015, 1100, 1900, 'mirror'),
-  // washer
-  p(3800, 9600, 4420, 10180, 0, 850, 'white', 'box', 20),
 
-  // ---------- balcony ----------
-  round(5200, -750, 300, 700, 730, 'oak'),
-  round(5200, -750, 30, 0, 700, 'charcoal'),
-  ...chair(5200, -1150, 's', 'sand'),
-  ...plant(6000, -1050, 0.8),
+  // ---------- balcony: planting only, kept low and out of the way of the glass door ----------
+  ...planter(4000, 6150, -1220, -1010),
+  ...plant(3980, -520, 0.7),
+  ...plant(6020, -500, 0.75),
 ]

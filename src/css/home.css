@@ -26,23 +26,8 @@
   color: var(--text-strong);
 }
 
-.home-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 1rem;
-  translate: -50% 0;
-  font-size: 0.75rem;
-  color: var(--muted);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 @media (max-width: 768px) {
   .home {
     left: 0;
-  }
-
-  .home-hint {
-    display: none;
   }
 }

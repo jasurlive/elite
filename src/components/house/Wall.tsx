@@ -1,6 +1,8 @@
 import { SLAB, SPAN, WALL_H, type WallDef } from '../../lib/plan'
 import { MAT } from './materials'
 import Opening from './Opening'
+import Facade from './Facade'
+import Railing from './Railing'
 
 type Piece = [x0: number, x1: number, y0: number, y1: number]
 
@@ -9,10 +11,19 @@ const CAP = 6
 
 // a straight wall from a to b in its own frame: x along the wall, z across it
 // openings cut the wall into solid pieces; frames, glass and leaves come from <Opening>
-export default function Wall({ a, b, t, height = WALL_H, openings = [] }: WallDef) {
+export default function Wall({ a, b, t, height = WALL_H, openings = [], facade, railing }: WallDef) {
   const dx = b[0] - a[0]
   const dz = b[1] - a[1]
   const length = Math.hypot(dx, dz)
+  const frame = { position: [a[0], 0, a[1]] as const, 'rotation-y': -Math.atan2(dz, dx) }
+
+  if (railing) {
+    return (
+      <group {...frame}>
+        <Railing length={length} />
+      </group>
+    )
+  }
 
   const pieces: Piece[] = []
   let cursor = 0
@@ -29,7 +40,7 @@ export default function Wall({ a, b, t, height = WALL_H, openings = [] }: WallDe
   const full = solid.filter(([, , y0, y1]) => y0 < 0 && y1 === height)
 
   return (
-    <group position={[a[0], 0, a[1]]} rotation-y={-Math.atan2(dz, dx)}>
+    <group {...frame}>
       {solid.map(([x0, x1, y0, y1], i) => (
         <mesh key={i} material={MAT.wall} position={[(x0 + x1) / 2, (y0 + y1) / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[x1 - x0, y1 - y0, t]} />
@@ -55,6 +66,8 @@ export default function Wall({ a, b, t, height = WALL_H, openings = [] }: WallDe
       {openings.map((o, i) => (
         <Opening key={i} opening={o} t={t} />
       ))}
+
+      {facade && <Facade facade={facade} length={length} t={t} height={height} openings={openings} />}
     </group>
   )
 }

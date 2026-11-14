@@ -1,5 +1,5 @@
 import { CanvasTexture, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace } from 'three'
-import type { Floor } from '../../lib/plan'
+import type { Brick, Floor } from '../../lib/plan'
 import { PALETTE, type Color } from '../../lib/furniture'
 
 // shared materials: created once, reused by every mesh
@@ -16,6 +16,8 @@ export const MAT = {
   glass: new MeshStandardMaterial({ color: '#dfeaec', roughness: 0.05, transparent: true, opacity: 0.22, depthWrite: false }),
   mirror: std('#ffffff', 0.02, 1),
   chrome: std('#d9d7d3', 0.25, 1),
+  iron: std('#1e1c1b', 0.45, 0.6), // balcony railing
+  band: std('#66625e', 0.7), // grey stringcourse on the facade
 }
 
 export const FURNITURE_MAT: Record<Color, MeshStandardMaterial> = {
@@ -34,7 +36,9 @@ export const FURNITURE_MAT: Record<Color, MeshStandardMaterial> = {
 let seed = 7
 const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646
 
-function texture(base: string, tileMm: number, draw: (ctx: CanvasRenderingContext2D, size: number) => void) {
+// tile: size in mm the canvas covers, square or [width, height]
+function texture(base: string, tile: number | [number, number], draw: (ctx: CanvasRenderingContext2D, size: number) => void) {
+  const [w, h] = typeof tile === 'number' ? [tile, tile] : tile
   const size = 512
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = size
@@ -45,11 +49,12 @@ function texture(base: string, tileMm: number, draw: (ctx: CanvasRenderingContex
 
   const map = new CanvasTexture(canvas)
   map.wrapS = map.wrapT = RepeatWrapping
-  map.repeat.set(1 / tileMm, 1 / tileMm)
+  map.repeat.set(1 / w, 1 / h)
   map.colorSpace = SRGBColorSpace
   map.anisotropy = 8
   return new MeshStandardMaterial({ map, roughness: 0.8 })
 }
+
 
 // 6 rows of planks, staggered joints, slight tone change per plank
 const planks = (ctx: CanvasRenderingContext2D, size: number) => {
@@ -79,4 +84,33 @@ export const FLOOR_MAT: Record<Floor, MeshStandardMaterial> = {
   oak: texture('#dcc6a3', 1500, planks),
   tile: texture('#e6e1d8', 1200, grid(2, 0.14)),
   stone: texture('#cfc7ba', 800, grid(2, 0.16)),
+}
+
+// ---------- facade brick: 250 × 65 mm bricks, 10 mm joints, running bond ----------
+
+const BRICK_W = 260 // brick + joint
+const COURSE = 75
+const BRICK_TILE: [number, number] = [2 * BRICK_W, 8 * COURSE]
+
+const bricks = (tones: string[]) => (ctx: CanvasRenderingContext2D, size: number) => {
+  ctx.scale(size / BRICK_TILE[0], size / BRICK_TILE[1])
+  for (let row = 0; row < 8; row++) {
+    for (let i = 0; i < 2; i++) {
+      const x = (row % 2) * (BRICK_W / 2) + i * BRICK_W
+      ctx.fillStyle = tones[Math.floor(rand() * tones.length)]
+      // drawn twice so a brick cut by the tile edge keeps one colour
+      for (const dx of [0, -BRICK_TILE[0]]) ctx.fillRect(x + dx + 5, row * COURSE + 5, BRICK_W - 10, COURSE - 10)
+    }
+  }
+}
+
+const brick = (mortar: string, tones: string[]) => {
+  const mat = texture(mortar, BRICK_TILE, bricks(tones))
+  mat.roughness = 0.92
+  return mat
+}
+
+export const BRICK_MAT: Record<Brick, MeshStandardMaterial> = {
+  red: brick('#b3a291', ['#92503b', '#9a553f', '#8a4a37', '#a05b44', '#95533e', '#9d573f']),
+  buff: brick('#dbcfb9', ['#cdb08a', '#c6a880', '#d4b892', '#c2a37b', '#cbad86', '#d0b28c']),
 }
