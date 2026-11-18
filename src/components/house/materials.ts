@@ -1,6 +1,7 @@
 import { CanvasTexture, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace } from 'three'
 import type { Brick, Floor } from '../../lib/plan'
 import { PALETTE, type Color } from '../../lib/furniture'
+import { SERVICE_COLOR } from '../../lib/services'
 
 // shared materials: created once, reused by every mesh
 
@@ -114,3 +115,19 @@ export const BRICK_MAT: Record<Brick, MeshStandardMaterial> = {
   red: brick('#b3a291', ['#92503b', '#9a553f', '#8a4a37', '#a05b44', '#95533e', '#9d573f']),
   buff: brick('#dbcfb9', ['#cdb08a', '#c6a880', '#d4b892', '#c2a37b', '#cbad86', '#d0b28c']),
 }
+
+// ---------- plumbing + electrical layers ----------
+
+export const SERVICE_MAT = {
+  ...(Object.fromEntries(Object.entries(SERVICE_COLOR).map(([key, color]) => [key, std(color, 0.45, 0.1)])) as Record<
+    keyof typeof SERVICE_COLOR,
+    MeshStandardMaterial
+  >),
+  valve: std('#c9c6c0', 0.3, 0.9),
+  plate: std('#fbfaf7', 0.6),
+  fitting: new MeshStandardMaterial({ color: '#fff6dc', emissive: '#ffe9a8', emissiveIntensity: 0.6 }),
+  board: std('#5b5650', 0.6, 0.2),
+}
+
+// furniture seen through while a service layer is on
+export const GHOST = new MeshStandardMaterial({ color: '#ffffff', roughness: 1, transparent: true, opacity: 0.28, depthWrite: false })

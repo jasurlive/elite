@@ -212,6 +212,12 @@ button.menu-item {
   color: var(--text-strong);
 }
 
+.menu-layers .menu-view {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .menu-view[aria-checked='true'] {
   background: var(--accent-soft);
   color: var(--accent);
@@ -232,6 +238,11 @@ button.menu-item {
     min-width: 190px;
   }
 
+  .menu-layers {
+    top: 168px; /* next to the Layers item */
+    min-width: 190px;
+  }
+
   .menu-settings {
     bottom: 10px; /* next to the Settings item */
     width: 320px;
@@ -245,7 +256,8 @@ button.menu-item {
     bottom: calc(78px + env(safe-area-inset-bottom));
   }
 
-  .menu-views {
+  .menu-views,
+  .menu-layers {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -291,26 +303,6 @@ button.menu-item {
   height: auto;
   border-radius: 4px;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 15%, transparent);
-}
-
-/* on/off item (utilities): accent icon + small dot instead of the "current page" look */
-.menu-switch .menu-icon {
-  position: relative;
-}
-
-.menu-switch.is-on .menu-icon {
-  color: var(--accent);
-}
-
-.menu-switch.is-on .menu-icon::after {
-  content: "";
-  position: absolute;
-  top: -2px;
-  right: -4px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
 }
 
 /* ---------- settings: controls help ---------- */

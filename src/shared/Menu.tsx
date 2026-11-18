@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
-import { FiBox, FiCamera, FiChevronLeft, FiChevronRight, FiLayers, FiMap, FiMaximize, FiMinimize, FiSettings } from "react-icons/fi";
+import { FiBox, FiCamera, FiChevronLeft, FiChevronRight, FiDroplet, FiLayers, FiMap, FiMaximize, FiMinimize, FiSettings, FiSquare, FiZap } from "react-icons/fi";
 import "../css/menu.css";
 import { VIEWS, type View } from "../lib/plan";
 import { useShortcuts } from "../hooks/LOCAL/useShortcuts";
-import { setView, slug, toggleUtilities, useHouse } from "../hooks/LOCAL/useHouse";
+import { LAYERS, nextLayer, setLayer, setView, slug, useHouse, type Layer } from "../hooks/LOCAL/useHouse";
 import ControlsHelp from "./ControlsHelp";
 import { useTranslation } from "react-i18next";
 import i18n, { LANGUAGES, useLang, usePlace } from "../i18n";
@@ -17,7 +17,9 @@ const readCollapsed = () => {
   }
 };
 
-type Panel = "views" | "settings" | null;
+type Panel = "views" | "layers" | "settings" | null;
+
+const LAYER_ICON = { furniture: FiLayers, empty: FiSquare, plumbing: FiDroplet, electric: FiZap } satisfies Record<Layer, unknown>;
 
 // fullscreen state, kept in sync when the user leaves with Esc; iPhone Safari has no fullscreen API
 const canFullscreen = typeof document !== "undefined" && document.fullscreenEnabled;
@@ -37,7 +39,8 @@ function useFullscreen() {
 
 // sidebar on desktop, floating pill on phones: pages + all 3D controls
 export default function Menu() {
-  const { view, utilities } = useHouse();
+  const { view, layer } = useHouse();
+  const LayerIcon = LAYER_ICON[layer];
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -67,7 +70,7 @@ export default function Menu() {
   useShortcuts({
     "`": toggleMenu,
     v: () => togglePanel("views"),
-    u: toggleUtilities,
+    u: nextLayer,
     ...(canFullscreen && { f: toggleFullscreen }),
     escape: () => setPanel(null),
   });
@@ -104,13 +107,13 @@ export default function Menu() {
 
         <button
           type="button"
-          className={`menu-item menu-switch ${utilities ? "is-on" : ""}`}
-          onClick={toggleUtilities}
-          aria-pressed={utilities}
-          title={`${t("menu.utilitiesToggle")} (U)`}
+          className={`menu-item ${panel === "layers" ? "active" : ""}`}
+          onClick={() => togglePanel("layers")}
+          aria-expanded={panel === "layers"}
+          title={`${t("menu.layers")} (U)`}
         >
-          <span className="menu-icon"><FiLayers /></span>
-          <span className="menu-label">{t(utilities ? "menu.withUtilities" : "menu.noUtilities")}</span>
+          <span className="menu-icon"><LayerIcon /></span>
+          <span className="menu-label">{t(`layers.${layer}`)}</span>
         </button>
 
         <NavLink to="/plan" className="menu-item" title={t("menu.plan")}>
@@ -169,6 +172,29 @@ export default function Menu() {
             </button>
           )}
           <ControlsHelp view={view} />
+        </div>
+      )}
+
+      {panel === "layers" && (
+        <div className="menu-flyout menu-layers" role="menu" aria-label={t("menu.layers")}>
+          {LAYERS.map((l) => {
+            const Icon = LAYER_ICON[l];
+            return (
+              <button
+                key={l}
+                type="button"
+                role="menuitemradio"
+                aria-checked={l === layer}
+                className="menu-view"
+                onClick={() => {
+                  setLayer(l);
+                  setPanel(null);
+                }}
+              >
+                <Icon /> {t(`layers.${l}`)}
+              </button>
+            );
+          })}
         </div>
       )}
 

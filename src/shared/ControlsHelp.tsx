@@ -22,7 +22,7 @@ const ROOM: Row[] = [
 
 const KEYS: Row[] = [
   [["V"], "menu.cameraViews"],
-  [["U"], "menu.utilitiesToggle"],
+  [["U"], "menu.layers"],
   [["F"], "menu.fullscreen"],
   [["`"], "help.collapse"],
   [["Esc"], "help.close"],

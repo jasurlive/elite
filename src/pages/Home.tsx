@@ -6,9 +6,9 @@ import { useHouse } from '../hooks/LOCAL/useHouse'
 import { useTranslation } from 'react-i18next'
 import { usePlace } from '../i18n'
 
-// the 3D house; camera view + utilities are controlled from the navbar
+// the 3D house; camera view + layer are controlled from the navbar
 export default function Home() {
-  const { view, utilities } = useHouse()
+  const { view, layer } = useHouse()
   const { t } = useTranslation()
   const place = usePlace()
 
@@ -21,11 +21,11 @@ export default function Home() {
         camera={{ position: [11, 10.5, 13], fov: 40 }}
         gl={{ toneMapping: NeutralToneMapping }}
       >
-        <Scene view={view} utilities={utilities} />
+        <Scene view={view} layer={layer} />
       </Canvas>
 
       <p className="home-caption">
-        <span className="home-title">Elite</span> {place(view.label)} · {t(utilities ? 'home.withUtilities' : 'home.noUtilities')}
+        <span className="home-title">Elite</span> {place(view.label)} · {t(`layers.${layer}`)}
       </p>
     </div>
   )

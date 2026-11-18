@@ -6,9 +6,13 @@ import { VIEWS, type View } from '../../lib/plan'
 
 export const slug = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
+// what is drawn on top of the bare rooms: furniture, nothing, or the plumbing / electrical routes
+export const LAYERS = ['furniture', 'empty', 'plumbing', 'electric'] as const
+export type Layer = (typeof LAYERS)[number]
+
 let state = {
   view: VIEWS.find((v) => `#${slug(v.label)}` === location.hash) ?? VIEWS[0],
-  utilities: true,
+  layer: 'furniture' as Layer,
 }
 
 const listeners = new Set<() => void>()
@@ -24,7 +28,8 @@ const subscribe = (listener: () => void) => {
 }
 
 export const setView = (view: View) => set({ view })
-export const toggleUtilities = () => set({ utilities: !state.utilities })
+export const setLayer = (layer: Layer) => set({ layer })
+export const nextLayer = () => set({ layer: LAYERS[(LAYERS.indexOf(state.layer) + 1) % LAYERS.length] })
 
 export function useHouse() {
   return useSyncExternalStore(subscribe, () => state)

@@ -1,8 +1,11 @@
 import type { Ref } from 'react'
-import { ROOMS, WALLS, type Opening, type Room, type Vec2, type WallDef } from '../lib/plan'
+import { ROOMS, WALLS, type Opening, type Room, type Vec2, type Vec3, type WallDef } from '../lib/plan'
 import { FURNITURE } from '../lib/furniture'
+import { BOARD, BOXES, CABLES, DEVICES, PIPES, RISERS, SERVICE_COLOR } from '../lib/services'
+import type { Layer } from '../hooks/LOCAL/useHouse'
 import { useTranslation } from 'react-i18next'
 import { usePlace } from '../i18n'
+import type { Messages } from '../i18n/en'
 
 // the updated floor plan as a clean 2D drawing, generated from the same data as the 3D model
 // units are plan millimetres (svg y = plan z)
@@ -133,7 +136,136 @@ function Dimension({ from, to, offset, label }: { from: Vec2; to: Vec2; offset: 
   )
 }
 
-export default function PlanDrawing({ utilities, ref }: { utilities: boolean; ref?: Ref<SVGSVGElement> }) {
+// room with a ceiling light inside it (its bounding box)
+const lit = (r: Room) => {
+  const xs = r.outline.map(([x]) => x)
+  const zs = r.outline.map(([, z]) => z)
+  return DEVICES.some(({ kind, at: [x, , z] }) => kind === 'light' && x > Math.min(...xs) && x < Math.max(...xs) && z > Math.min(...zs) && z < Math.max(...zs))
+}
+
+const line = (pts: Vec3[]) => pts.map(([x, , z]) => `${x},${z}`).join(' ')
+
+// pipes: drains under, hot + cold on top; outlets = small rings, risers = crossed circles
+function PlumbingMarks() {
+  const ordered = [...PIPES].sort((a, b) => (a.kind === 'drain' ? -1 : 0) - (b.kind === 'drain' ? -1 : 0))
+  return (
+    <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+      {ordered.map((p, i) => (
+        <polyline key={i} points={line(p.points)} stroke={SERVICE_COLOR[p.kind]} strokeWidth={p.kind === 'drain' ? Math.max(40, p.r) : 26} />
+      ))}
+      {PIPES.filter((p) => p.outlet).map((p, i) => {
+        const [x, , z] = p.points[p.points.length - 1]
+        return <circle key={i} cx={x} cy={z} r={45} fill="#fff" stroke={SERVICE_COLOR[p.kind]} strokeWidth={18} />
+      })}
+      {RISERS.map(({ room, drain: [x, z] }) => (
+        <g key={room} stroke={INK} strokeWidth={14}>
+          <circle cx={x} cy={z} r={110} fill="#fff" />
+          <path d={`M ${x - 78} ${z - 78} L ${x + 78} ${z + 78} M ${x - 78} ${z + 78} L ${x + 78} ${z - 78}`} />
+        </g>
+      ))}
+    </g>
+  )
+}
+
+// cables + symbols: socket = half-filled circle, switch = circle with a lever, light = crossed circle
+function ElectricMarks() {
+  const [bx, , bz] = BOARD.at
+  return (
+    <g strokeLinecap="round" strokeLinejoin="round">
+      {CABLES.map((c, i) => (
+        <polyline key={i} points={line(c.points)} fill="none" stroke={SERVICE_COLOR[c.kind]} strokeWidth={c.kind === 'power' ? 22 : 16} strokeDasharray={c.kind === 'light' ? '70 40' : undefined} />
+      ))}
+      <rect x={bx} y={bz - BOARD.size[2] / 2} width={140} height={BOARD.size[2]} fill={INK} />
+      {BOXES.map(([x, , z], i) => (
+        <circle key={i} cx={x} cy={z} r={55} fill={INK} />
+      ))}
+      {DEVICES.map(({ kind, at: [x, , z] }, i) => (
+        <DeviceMark key={i} kind={kind} x={x} z={z} />
+      ))}
+    </g>
+  )
+}
+
+function DeviceMark({ kind, x, z }: { kind: 'socket' | 'switch' | 'light'; x: number; z: number }) {
+  if (kind === 'light') {
+    const d = 110
+    return (
+      <g stroke={INK} strokeWidth={14} fill="#fff">
+        <circle cx={x} cy={z} r={155} />
+        <path d={`M ${x - d} ${z - d} L ${x + d} ${z + d} M ${x - d} ${z + d} L ${x + d} ${z - d}`} />
+      </g>
+    )
+  }
+  if (kind === 'socket') {
+    return (
+      <g stroke={SERVICE_COLOR.power} strokeWidth={14}>
+        <circle cx={x} cy={z} r={80} fill="#fff" />
+        <path d={`M ${x - 80} ${z} A 80 80 0 0 1 ${x + 80} ${z} Z`} fill={SERVICE_COLOR.power} />
+      </g>
+    )
+  }
+  return (
+    <g stroke={INK} strokeWidth={14}>
+      <circle cx={x} cy={z} r={65} fill="#fff" />
+      <line x1={x + 45} y1={z - 45} x2={x + 150} y2={z - 150} />
+    </g>
+  )
+}
+
+type Key = `services.${keyof Messages['services']}`
+const LEGEND: Record<'plumbing' | 'electric', [mark: 'line' | 'dash' | 'ring' | 'riser' | 'socket' | 'switch' | 'light' | 'board' | 'box', color: string, key: Key][]> = {
+  plumbing: [
+    ['line', SERVICE_COLOR.cold, 'services.cold'],
+    ['line', SERVICE_COLOR.hot, 'services.hot'],
+    ['line', SERVICE_COLOR.drain, 'services.drain'],
+    ['ring', SERVICE_COLOR.cold, 'services.outlet'],
+    ['riser', INK, 'services.riser'],
+  ],
+  electric: [
+    ['line', SERVICE_COLOR.power, 'services.power'],
+    ['dash', SERVICE_COLOR.light, 'services.lighting'],
+    ['board', INK, 'services.board'],
+    ['box', INK, 'services.box'],
+    ['socket', SERVICE_COLOR.power, 'services.socket'],
+    ['switch', INK, 'services.switch'],
+    ['light', INK, 'services.light'],
+  ],
+}
+
+function Legend({ layer }: { layer: 'plumbing' | 'electric' }) {
+  const { t } = useTranslation()
+  const [x, y] = [-450, 6900]
+  return (
+    <g fontSize={170} fill={INK}>
+      <text x={x} y={y} fontWeight={600} fontSize={220}>{t(`layers.${layer}`)}</text>
+      {LEGEND[layer].map(([mark, color, key], i) => {
+        const cy = y + 420 + i * 360
+        const cx = x + 160
+        return (
+          <g key={key}>
+            {(mark === 'line' || mark === 'dash') && (
+              <line x1={x} x2={x + 320} y1={cy} y2={cy} stroke={color} strokeWidth={mark === 'dash' ? 16 : 26} strokeDasharray={mark === 'dash' ? '70 40' : undefined} />
+            )}
+            {mark === 'ring' && <circle cx={cx} cy={cy} r={45} fill="#fff" stroke={color} strokeWidth={18} />}
+            {mark === 'riser' && (
+              <g stroke={INK} strokeWidth={14}>
+                <circle cx={cx} cy={cy} r={110} fill="#fff" />
+                <path d={`M ${cx - 78} ${cy - 78} L ${cx + 78} ${cy + 78} M ${cx - 78} ${cy + 78} L ${cx + 78} ${cy - 78}`} />
+              </g>
+            )}
+            {mark === 'board' && <rect x={cx - 70} y={cy - 110} width={140} height={220} fill={INK} />}
+            {mark === 'box' && <circle cx={cx} cy={cy} r={55} fill={INK} />}
+            {(mark === 'socket' || mark === 'switch' || mark === 'light') && <DeviceMark kind={mark} x={cx} z={cy} />}
+            <text x={x + 430} y={cy} dy={60}>{t(key)}</text>
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
+export default function PlanDrawing({ layer, ref }: { layer: Layer; ref?: Ref<SVGSVGElement> }) {
+  const services = layer === 'plumbing' || layer === 'electric'
   // footprints, low pieces first; things above 1.4 m (shelves, cabinets, mirrors) are dashed
   const pieces = FURNITURE.filter((p) => p.color !== 'rug').sort((p, q) => p.box[4] - q.box[4])
   const { t } = useTranslation()
@@ -152,11 +284,11 @@ export default function PlanDrawing({ utilities, ref }: { utilities: boolean; re
         <polygon key={r.name} points={r.outline.join(' ')} fill={FILL[r.floor]} />
       ))}
 
-      {utilities &&
+      {layer !== 'empty' &&
         pieces.map(({ box: [x0, z0, x1, z1, y0], color, shape }, i) => {
           const common = {
             fill: color === 'glass' || color === 'mirror' ? 'none' : '#fff',
-            stroke: '#a59a8c',
+            stroke: services ? '#ddd6cc' : '#a59a8c',
             strokeWidth: 8,
             strokeDasharray: y0 > 1400 ? '40 30' : undefined,
           }
@@ -171,8 +303,13 @@ export default function PlanDrawing({ utilities, ref }: { utilities: boolean; re
         <WallMark key={i} {...w} />
       ))}
 
+      {layer === 'plumbing' && <PlumbingMarks />}
+      {layer === 'electric' && <ElectricMarks />}
+      {services && <Legend layer={layer} />}
+
       {ROOMS.map((r) => {
-        const [cx, cz] = r.label ?? centroid(r.outline)
+        const [cx, c] = r.label ?? centroid(r.outline)
+        const cz = layer === 'electric' && lit(r) ? c - 550 : c // lift the name off the ceiling light in the middle
         return (
           <text key={r.name} x={cx} y={cz} textAnchor="middle" fill={INK} stroke="#fff" strokeWidth={60} paintOrder="stroke">
             <tspan fontSize={260} fontWeight={600}>{place(r.name)}</tspan>

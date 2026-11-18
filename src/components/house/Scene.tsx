@@ -5,6 +5,8 @@ import Camera from './Camera'
 import Floor from './Floor'
 import Wall from './Wall'
 import Furniture from './Furniture'
+import Services from './Services'
+import type { Layer } from '../../hooks/LOCAL/useHouse'
 import { MAT } from './materials'
 import { toShape } from './shape'
 
@@ -32,9 +34,9 @@ function Ceilings() {
   ))
 }
 
-type Props = { view: View; utilities: boolean }
+type Props = { view: View; layer: Layer }
 
-export default function Scene({ view, utilities }: Props) {
+export default function Scene({ view, layer }: Props) {
   return (
     <>
       <color attach="background" args={['#f4f1ec']} />
@@ -70,7 +72,8 @@ export default function Scene({ view, utilities }: Props) {
         {WALLS.map((wall, i) => <Wall key={i} {...wall} />)}
         <ShadowRoof />
         {'room' in view && <Ceilings />}
-        {utilities && <Furniture />}
+        {layer !== 'empty' && <Furniture ghost={layer !== 'furniture'} />}
+        <Services layer={layer} />
       </group>
     </>
   )

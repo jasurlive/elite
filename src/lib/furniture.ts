@@ -1,6 +1,6 @@
 import { WALL_H } from './plan'
 
-// "utilities": furniture + fixtures, shown with the toggle
+// "utilities": furniture + fixtures, the default layer (see LAYERS in useHouse)
 // every piece = plan rect (x0, z0 → x1, z1) + height (y0 → y1) in mm, drawn as a soft box, cylinder or sphere
 
 export const PALETTE = {
@@ -82,6 +82,33 @@ const bed = (wall: number, z0: number, z1: number, length = 2100, duvet: Color =
       : [part(180, 560, z0 + 90, zc - 30, 540, 680, 'white', 55), part(180, 560, zc + 30, z1 - 90, 540, 680, 'white', 55)]),
     part(0, 110, z0 - 40, z1 + 40, 0, 1150, 'oat', 40),
   ]
+}
+
+// bunk bed in the corner of the left-hand wall (x = x0) and the head wall (z = z0), running towards +z:
+// oak frame on four posts, two mattresses, a guard rail on the open side of the top bunk, ladder at the foot
+const bunk = (x0: number, z0: number, lower: Color, upper: Color, width = 1000, length = 2100): Piece[] => {
+  const [x1, z1] = [x0 + width, z0 + length]
+  const P = 70 // post size
+  const level = (y: number, duvet: Color): Piece[] => [
+    p(x0 + P, z0 + P, x1 - P, z1 - P, y, y + 150, 'oak', 'box', 10), // frame + slats
+    p(x0 + P + 10, z0 + P + 10, x1 - P - 10, z1 - P - 10, y + 150, y + 320, 'linenWhite', 'box', 50),
+    p(x0 + P, z0 + 750, x1 - P, z1 - P, y + 320, y + 350, duvet, 'box', 14),
+    p(x0 + 150, z0 + P + 60, x1 - 150, z0 + 470, y + 320, y + 450, 'white', 'box', 50), // pillow, head to the window wall
+    p(x0 + P, z0, x1 - P, z0 + 30, y + 150, y + 650, 'oak', 'box', 8), // head board
+    p(x0 + P, z1 - 30, x1 - P, z1, y + 150, y + 550, 'oak', 'box', 8), // foot board
+  ]
+  const top = 1150
+  const ladder = [z1 - 520, z1 - 120] // on the open side, at the foot end
+  const pieces = [
+    ...[[x0, z0], [x1 - P, z0], [x0, z1 - P], [x1 - P, z1 - P]].map(([x, z]) => p(x, z, x + P, z + P, 0, top + 650, 'oak', 'box', 10)),
+    ...level(180, lower),
+    ...level(top, upper),
+    p(x0, z0 + P, x0 + 30, z1 - P, top + 150, top + 650, 'oak', 'box', 8), // guard rail on the wall side
+    p(x1 - 30, z0 + P, x1, ladder[0] - 20, top + 150, top + 650, 'oak', 'box', 8), // guard rail on the open side, gap at the ladder
+    ...ladder.map((z) => p(x1, z, x1 + 40, z + 40, 0, top + 650, 'oak', 'box', 8)), // ladder rails
+  ]
+  for (let y = 300; y < top + 300; y += 290) pieces.push(p(x1, ladder[0], x1 + 40, ladder[1] + 40, y, y + 30, 'oak', 'box', 6)) // rungs
+  return pieces
 }
 
 // nightstand with a small lamp
@@ -238,6 +265,26 @@ const wallUnit = (x0: number, z0: number, x1: number, z1: number, front: Facing,
   return pieces
 }
 
+// heated towel rail ("snake"): chrome bars joined by U-bends in a zigzag, standing 45 mm off the wall;
+// (x, z) = middle of it on the wall face, f = the way it faces; fed from the hot-water line at the bottom
+const towelRail = (x: number, z: number, f: Facing, y0: number, y1: number, width = 500, bars = 6): Piece[] => {
+  const b = local(x, z, f)
+  const [l, r] = [-width / 2, width / 2]
+  const step = (y1 - y0) / (bars - 1)
+  const pieces: Piece[] = []
+  for (let i = 0; i < bars; i++) {
+    const y = y0 + i * step
+    pieces.push(b(l, r, 45, 75, y - 15, y + 15, 'chrome', 'box', 15))
+    if (i < bars - 1) {
+      const u = i % 2 ? l : r - 30 // U-bend alternates ends → snake
+      pieces.push(b(u, u + 30, 45, 75, y, y + step, 'chrome', 'box', 15))
+    }
+  }
+  // two stubs into the wall at the l end: inlet at the bottom, outlet at the top
+  for (const y of [y0, y1]) pieces.push(b(l, l + 30, 0, 45, y - 15, y + 15, 'chrome', 'box', 15))
+  return pieces
+}
+
 // long low trough along the railing: a tidy row of greenery with small flowers between
 const planter = (x0: number, x1: number, z0: number, z1: number): Piece[] => {
   const zc = (z0 + z1) / 2
@@ -253,11 +300,10 @@ const planter = (x0: number, x1: number, z0: number, z1: number): Piece[] => {
 }
 
 export const FURNITURE: Piece[] = [
-  // ---------- kids' room: two single beds, shared desk + bookshelf ----------
-  ...bed(0, 2350, 3250, 2000, 'sage'),
-  ...bed(0, 3950, 4850, 2000, 'clay'),
-  ...nightstand(0, 3400),
-  ...bookshelf(0, 300, 2100),
+  // ---------- kids' room: bunk bed (saves floor), shared desk + bookshelf ----------
+  // bunk in the north-west corner, heads towards the window wall; frees the middle of the room to play
+  ...bunk(0, 0, 'sage', 'clay'),
+  ...bookshelf(0, 2400, 4200),
   // shared study desk on the right wall: window light comes from the left, no glare on the screens
   p(2450, 250, 3100, 2650, 720, 750, 'oakLight', 'box', 8),
   ...legs(2450, 250, 3100, 2650, 720, 'oak', 30, 30),
@@ -266,7 +312,7 @@ export const FURNITURE: Piece[] = [
   ...laptop(2800, 850, 'e'),
   ...laptop(2800, 2050, 'e'),
   ...deskLamp(2950, 1450),
-  p(900, 500, 2300, 2300, 0, 8, 'rug', 'box', 4),
+  p(1000, 2600, 2400, 4600, 0, 8, 'rug', 'box', 4),
   round(1300, 5150, 300, 0, 450, 'sand', 'sphere'),
   ...wardrobe(0, 5550, 1800, 6150, 'n'), // floor to ceiling, sliding doors
 
@@ -361,6 +407,8 @@ export const FURNITURE: Piece[] = [
   // wall-mounted spout over the bowl + small lever beside it
   p(2450, 8435, 2760, 8465, 1060, 1085, 'chrome', 'box', 10),
   round(2500, 8580, 14, 1060, 1120, 'chrome'),
+  // heated towel rail on the north wall, on your right as you come in through the door
+  ...towelRail(3950, 8000, 's', 900, 1700),
   // mirror cabinet above: shelves behind two mirrored doors
   p(2450, 8000, 2600, 8900, 1150, 1900, 'linenWhite', 'box', 6),
   p(2600, 8000, 2606, 8448, 1150, 1900, 'mirror'),

@@ -24,7 +24,7 @@ function downloadPng(svg: SVGSVGElement) {
 }
 
 export default function Plan() {
-  const { utilities } = useHouse()
+  const { layer } = useHouse()
   const { t } = useTranslation()
   const [tab, setTab] = useState<'updated' | 'original'>('updated')
   const svg = useRef<SVGSVGElement>(null)
@@ -53,7 +53,7 @@ export default function Plan() {
 
       <div className="plan-sheet">
         {tab === 'updated' ? (
-          <PlanDrawing ref={svg} utilities={utilities} />
+          <PlanDrawing ref={svg} layer={layer} />
         ) : (
           <img src={original} alt={t('plan.originalAlt')} />
         )}
