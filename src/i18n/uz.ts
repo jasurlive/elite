@@ -1,0 +1,62 @@
+import type { Messages } from './en'
+
+// o'zbek (lotin yozuvi)
+const uz: Messages = {
+  lang: { label: 'Til', name: 'Oʻzbekcha' },
+  menu: {
+    toggle: 'Menyuni yigʻish',
+    house: 'Uy',
+    views: 'Koʻrinishlar',
+    cameraViews: 'Kamera koʻrinishlari',
+    utilitiesToggle: 'Jihozlarni yoqish / oʻchirish',
+    withUtilities: 'Jihozlar bilan',
+    noUtilities: 'Jihozlarsiz',
+    plan: 'Reja',
+    settings: 'Sozlamalar',
+    settingsTitle: 'Sozlamalar va boshqaruv',
+    fullscreen: 'Toʻliq ekran',
+  },
+  help: {
+    outside: 'Tashqarida',
+    inRoom: 'Xonada',
+    keyboard: 'Klaviatura',
+    keys: { drag: 'Sudrash', scroll: 'Gʻildirak', pinch: 'Chimdish', rightDrag: 'Oʻng tugma', twoFingers: 'Ikki barmoq' },
+    orbit: 'Uy atrofida aylantirish',
+    zoom: 'Kattalashtirish',
+    pan: 'Surish',
+    look: 'Atrofga qarash',
+    walk: 'Oldinga / orqaga yurish',
+    step: 'Chapga / oʻngga qadam',
+    slide: 'Yon tomonga surilish',
+    collapse: 'Menyuni yigʻish',
+    close: 'Panelni yopish',
+  },
+  place: {
+    overview: 'Umumiy koʻrinish',
+    top: 'Yuqoridan',
+    facade: 'Fasad',
+    hall: 'Mehmonxona',
+    kitchen: 'Oshxona',
+    bedroom: 'Yotoqxona',
+    'kids-room': 'Bolalar xonasi',
+    corridor: 'Yoʻlak',
+    bath: 'Hammom',
+    storage: 'Omborxona',
+    balcony: 'Balkon',
+  },
+  home: { withUtilities: 'jihozlar bilan', noUtilities: 'jihozlarsiz' },
+  plan: {
+    updated: 'Yangilangan reja',
+    original: 'Asl chizma',
+    download: 'PNG yuklab olish',
+    openFull: 'Toʻliq oʻlchamda ochish',
+    originalAlt: 'Asl reja: ikki yotoqxona, mehmonxona, oshxona, hojatxona, hammom va yoʻlak',
+    title: 'Elite — yangilangan reja',
+    notes1: 'bolalar xonasi · ish joyi · surma shisha eshik',
+    notes2: 'omborxona · dush + hojatxona',
+    m: 'm',
+  },
+  error: { title: 'Nimadir xato ketdi', text: 'Sahifani qayta yuklab koʻring.', reload: 'Qayta yuklash' },
+}
+
+export default uz

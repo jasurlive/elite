@@ -3,6 +3,7 @@ import '../css/plan.css'
 import original from '../assets/elite.jpg'
 import PlanDrawing from '../components/PlanDrawing'
 import { useHouse } from '../hooks/LOCAL/useHouse'
+import { useTranslation } from 'react-i18next'
 
 // svg → png file, so the updated plan can be shared like the original
 function downloadPng(svg: SVGSVGElement) {
@@ -24,6 +25,7 @@ function downloadPng(svg: SVGSVGElement) {
 
 export default function Plan() {
   const { utilities } = useHouse()
+  const { t } = useTranslation()
   const [tab, setTab] = useState<'updated' | 'original'>('updated')
   const svg = useRef<SVGSVGElement>(null)
 
@@ -31,20 +33,20 @@ export default function Plan() {
     <div className="plan">
       <header className="plan-head">
         <div className="plan-tabs" role="tablist">
-          {(['updated', 'original'] as const).map((t) => (
-            <button key={t} type="button" role="tab" aria-selected={tab === t} className="plan-tab" onClick={() => setTab(t)}>
-              {t === 'updated' ? 'Updated plan' : 'Original drawing'}
+          {(['updated', 'original'] as const).map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} className="plan-tab" onClick={() => setTab(k)}>
+              {t(`plan.${k}`)}
             </button>
           ))}
         </div>
 
         {tab === 'updated' ? (
           <button type="button" className="page-button" onClick={() => svg.current && downloadPng(svg.current)}>
-            Download PNG
+            {t('plan.download')}
           </button>
         ) : (
           <a className="page-button" href={original} target="_blank" rel="noreferrer">
-            Open full size
+            {t('plan.openFull')}
           </a>
         )}
       </header>
@@ -53,7 +55,7 @@ export default function Plan() {
         {tab === 'updated' ? (
           <PlanDrawing ref={svg} utilities={utilities} />
         ) : (
-          <img src={original} alt="Original floor plan: two bedrooms, hall, kitchen, WC, bath and corridor" />
+          <img src={original} alt={t('plan.originalAlt')} />
         )}
       </div>
     </div>

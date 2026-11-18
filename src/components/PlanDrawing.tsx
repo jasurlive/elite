@@ -1,6 +1,8 @@
 import type { Ref } from 'react'
 import { ROOMS, WALLS, type Opening, type Room, type Vec2, type WallDef } from '../lib/plan'
 import { FURNITURE } from '../lib/furniture'
+import { useTranslation } from 'react-i18next'
+import { usePlace } from '../i18n'
 
 // the updated floor plan as a clean 2D drawing, generated from the same data as the 3D model
 // units are plan millimetres (svg y = plan z)
@@ -43,12 +45,16 @@ function OpeningMark({ o, t }: { o: Opening; t: number }) {
   }
 
   if (o.kind === 'slide') {
-    const w = o.width / 2 + 40
+    // bi-parting: both leaves on the +y face, arrows from the centre out to each side
+    const leaf = o.width / 2 + 40
+    const y = t / 2 + 10
     return (
       <g stroke={INK} strokeWidth={10} fill="#fff">
-        <rect x={x0} y={-45} width={w} height={30} />
-        <rect x={x1 - w} y={15} width={w} height={30} />
-        <path d={`M ${x1 - 250} 110 h -450 m 90 -50 l -90 50 l 90 50`} fill="none" strokeWidth={14} />
+        <rect x={o.at - leaf} y={y} width={leaf} height={30} />
+        <rect x={o.at} y={y} width={leaf} height={30} />
+        {[-1, 1].map((s) => (
+          <path key={s} d={`M ${o.at + s * 100} ${y + 110} h ${s * 450} m ${-s * 90} -50 l ${s * 90} 50 l ${-s * 90} 50`} fill="none" strokeWidth={14} />
+        ))}
       </g>
     )
   }
@@ -130,6 +136,8 @@ function Dimension({ from, to, offset, label }: { from: Vec2; to: Vec2; offset: 
 export default function PlanDrawing({ utilities, ref }: { utilities: boolean; ref?: Ref<SVGSVGElement> }) {
   // footprints, low pieces first; things above 1.4 m (shelves, cabinets, mirrors) are dashed
   const pieces = FURNITURE.filter((p) => p.color !== 'rug').sort((p, q) => p.box[4] - q.box[4])
+  const { t } = useTranslation()
+  const place = usePlace()
 
   return (
     <svg
@@ -167,9 +175,9 @@ export default function PlanDrawing({ utilities, ref }: { utilities: boolean; re
         const [cx, cz] = r.label ?? centroid(r.outline)
         return (
           <text key={r.name} x={cx} y={cz} textAnchor="middle" fill={INK} stroke="#fff" strokeWidth={60} paintOrder="stroke">
-            <tspan fontSize={260} fontWeight={600}>{r.name}</tspan>
+            <tspan fontSize={260} fontWeight={600}>{place(r.name)}</tspan>
             <tspan x={cx} dy={300} fontSize={190} fill="#7a7168">
-              {(area(r.outline) / 1e6).toFixed(1)} m²
+              {(area(r.outline) / 1e6).toFixed(1)} {t('plan.m')}²
             </tspan>
           </text>
         )
@@ -179,18 +187,18 @@ export default function PlanDrawing({ utilities, ref }: { utilities: boolean; re
       <Dimension from={[-250, -1300]} to={[-250, 10450]} offset={[-500, 0]} label="11 750" />
 
       <g fill={INK} fontSize={220}>
-        <text x={7000} y={10000} fontWeight={600}>Elite — updated plan</text>
+        <text x={7000} y={10000} fontWeight={600}>{t('plan.title')}</text>
         <text x={7000} y={10300} fontSize={170} fill="#7a7168">
-          kids' room · coding workspace · sliding glass door
+          {t('plan.notes1')}
         </text>
         <text x={7000} y={10520} fontSize={170} fill="#7a7168">
-          storage + make-up room · shower + WC
+          {t('plan.notes2')}
         </text>
         <rect x={7000} y={10750} width={1000} height={60} />
         <rect x={8000} y={10750} width={1000} height={60} fill="none" stroke={INK} strokeWidth={10} />
         <text x={7000} y={11050} fontSize={160}>0</text>
         <text x={8000} y={11050} fontSize={160} textAnchor="middle">1</text>
-        <text x={9000} y={11050} fontSize={160} textAnchor="middle">2 m</text>
+        <text x={9000} y={11050} fontSize={160} textAnchor="middle">2 {t('plan.m')}</text>
       </g>
     </svg>
   )

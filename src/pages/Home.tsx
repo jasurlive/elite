@@ -3,10 +3,14 @@ import { NeutralToneMapping } from 'three'
 import '../css/home.css'
 import Scene from '../components/house/Scene'
 import { useHouse } from '../hooks/LOCAL/useHouse'
+import { useTranslation } from 'react-i18next'
+import { usePlace } from '../i18n'
 
 // the 3D house; camera view + utilities are controlled from the navbar
 export default function Home() {
   const { view, utilities } = useHouse()
+  const { t } = useTranslation()
+  const place = usePlace()
 
   return (
     <div className="home">
@@ -21,7 +25,7 @@ export default function Home() {
       </Canvas>
 
       <p className="home-caption">
-        <span className="home-title">Elite</span> {view.label} · {utilities ? 'with utilities' : 'no utilities'}
+        <span className="home-title">Elite</span> {place(view.label)} · {t(utilities ? 'home.withUtilities' : 'home.noUtilities')}
       </p>
     </div>
   )

@@ -47,14 +47,17 @@ export default function Opening({ opening: o, t }: { opening: OpeningDef; t: num
   }
 
   if (o.kind === 'slide') {
-    // two glass panels on parallel tracks, the second one slid half open
-    const w = o.width / 2 + 40
-    const slid = w * 0.55
+    // bi-parting: two glass leaves on one track on the wall's +z face, opening from the centre to both sides (shown half open)
+    // the rail is exactly the leaves' travel: fully open, each leaf parks beside the opening (at ± width)
+    const leaf = o.width / 2 + 40
+    const slid = leaf * 0.45
+    const face = t / 2 + 25
     return (
       <>
         <Box x={[x0, x1]} y={[top - 40, top]} depth={t} material={MAT.steel} />
-        <Glazing x={[x0, x0 + w]} y={[0, top - 40]} bar={45} depth={35} z={-25} material={MAT.steel} />
-        <Glazing x={[x1 - w - slid, x1 - slid]} y={[0, top - 40]} bar={45} depth={35} z={25} material={MAT.steel} />
+        <Box x={[o.at - o.width, o.at + o.width]} y={[top, top + 50]} depth={40} z={face} material={MAT.steel} />
+        <Glazing x={[o.at - leaf - slid, o.at - slid]} y={[10, top]} bar={45} depth={35} z={face} material={MAT.steel} />
+        <Glazing x={[o.at + slid, o.at + leaf + slid]} y={[10, top]} bar={45} depth={35} z={face} material={MAT.steel} />
       </>
     )
   }

@@ -6,6 +6,8 @@ import { VIEWS, type View } from "../lib/plan";
 import { useShortcuts } from "../hooks/LOCAL/useShortcuts";
 import { setView, slug, toggleUtilities, useHouse } from "../hooks/LOCAL/useHouse";
 import ControlsHelp from "./ControlsHelp";
+import { useTranslation } from "react-i18next";
+import i18n, { LANGUAGES, currentLang, usePlace } from "../i18n";
 
 const readCollapsed = () => {
   try {
@@ -15,7 +17,7 @@ const readCollapsed = () => {
   }
 };
 
-type Panel = "views" | "settings" | null;
+type Panel = "views" | "lang" | "settings" | null;
 
 // fullscreen state, kept in sync when the user leaves with Esc; iPhone Safari has no fullscreen API
 const canFullscreen = typeof document !== "undefined" && document.fullscreenEnabled;
@@ -42,6 +44,13 @@ export default function Menu() {
   const [panel, setPanel] = useState<Panel>(null);
   const [fullscreen, toggleFullscreen] = useFullscreen();
   const togglePanel = (p: Panel) => setPanel((open) => (open === p ? null : p));
+  const { t } = useTranslation();
+  const place = usePlace();
+  const lang = LANGUAGES.find((l) => l.code === currentLang()) ?? LANGUAGES[0];
+  const pickLang = (code: string) => {
+    void i18n.changeLanguage(code); // the detector saves it to localStorage
+    setPanel(null);
+  };
 
   const toggleMenu = () => {
     setCollapsed((value) => {
@@ -73,16 +82,16 @@ export default function Menu() {
           type="button"
           className="menu-toggle"
           onClick={toggleMenu}
-          aria-label="Toggle sidebar (`)"
-          title="Toggle sidebar (`)"
+          aria-label={`${t("menu.toggle")} (\`)`}
+          title={`${t("menu.toggle")} (\`)`}
         >
           {collapsed ? <FiChevronRight /> : <FiChevronLeft />}
         </button>
 
         {/* NavLink adds .active on the current page; `end` so "/" isn't active everywhere */}
-        <NavLink to="/" end className="menu-item" title="House">
+        <NavLink to="/" end className="menu-item" title={t("menu.house")}>
           <span className="menu-icon"><FiBox /></span>
-          <span className="menu-label">House</span>
+          <span className="menu-label">{t("menu.house")}</span>
         </NavLink>
 
         <button
@@ -90,10 +99,10 @@ export default function Menu() {
           className={`menu-item ${panel === "views" ? "active" : ""}`}
           onClick={() => togglePanel("views")}
           aria-expanded={panel === "views"}
-          title="Views (V)"
+          title={`${t("menu.views")} (V)`}
         >
           <span className="menu-icon"><FiCamera /></span>
-          <span className="menu-label">Views</span>
+          <span className="menu-label">{t("menu.views")}</span>
         </button>
 
         <button
@@ -101,33 +110,44 @@ export default function Menu() {
           className={`menu-item menu-switch ${utilities ? "is-on" : ""}`}
           onClick={toggleUtilities}
           aria-pressed={utilities}
-          title="Utilities on / off (U)"
+          title={`${t("menu.utilitiesToggle")} (U)`}
         >
           <span className="menu-icon"><FiLayers /></span>
-          <span className="menu-label">{utilities ? "With utilities" : "No utilities"}</span>
+          <span className="menu-label">{t(utilities ? "menu.withUtilities" : "menu.noUtilities")}</span>
         </button>
 
-        <NavLink to="/plan" className="menu-item" title="Plan">
+        <NavLink to="/plan" className="menu-item" title={t("menu.plan")}>
           <span className="menu-icon"><FiMap /></span>
-          <span className="menu-label">Plan</span>
+          <span className="menu-label">{t("menu.plan")}</span>
         </NavLink>
+
+        <button
+          type="button"
+          className={`menu-item menu-bottom ${panel === "lang" ? "active" : ""}`}
+          onClick={() => togglePanel("lang")}
+          aria-expanded={panel === "lang"}
+          title={t("lang.label")}
+        >
+          <span className="menu-icon"><lang.flag className="menu-flag" /></span>
+          <span className="menu-label">{t("lang.name")}</span>
+        </button>
 
         <button
           type="button"
           className={`menu-item menu-bottom ${panel === "settings" ? "active" : ""}`}
           onClick={() => togglePanel("settings")}
           aria-expanded={panel === "settings"}
-          title="Settings & controls"
+          title={t("menu.settingsTitle")}
         >
           <span className="menu-icon"><FiSettings /></span>
-          <span className="menu-label">Settings</span>
+          <span className="menu-label">{t("menu.settings")}</span>
         </button>
       </nav>
 
       {panel && <div className="menu-backdrop" onClick={() => setPanel(null)} />}
 
       {panel === "settings" && (
-        <div className="menu-flyout menu-settings" role="dialog" aria-label="Settings and controls">
+        <div className="menu-flyout menu-settings" role="dialog" aria-label={t("menu.settingsTitle")}>
           {canFullscreen && (
             <button
               type="button"
@@ -135,10 +155,10 @@ export default function Menu() {
               aria-checked={fullscreen}
               className="settings-switch"
               onClick={toggleFullscreen}
-              title="Fullscreen (F)"
+              title={`${t("menu.fullscreen")} (F)`}
             >
               <span className="menu-icon">{fullscreen ? <FiMinimize /> : <FiMaximize />}</span>
-              <span>Fullscreen</span>
+              <span>{t("menu.fullscreen")}</span>
               <span className="settings-knob" />
             </button>
           )}
@@ -146,9 +166,28 @@ export default function Menu() {
         </div>
       )}
 
+      {panel === "lang" && (
+        <div className="menu-flyout menu-langs" role="menu" aria-label={t("lang.label")}>
+          {LANGUAGES.map(({ code, flag: Flag }) => (
+            <button
+              key={code}
+              type="button"
+              role="menuitemradio"
+              aria-checked={code === lang.code}
+              className="menu-view menu-lang"
+              lang={code}
+              onClick={() => pickLang(code)}
+            >
+              <Flag className="menu-flag" />
+              {t("lang.name", { lng: code })}
+            </button>
+          ))}
+        </div>
+      )}
+
       {panel === "views" && (
         <>
-          <div className="menu-flyout menu-views" role="menu" aria-label="Camera views">
+          <div className="menu-flyout menu-views" role="menu" aria-label={t("menu.cameraViews")}>
             {VIEWS.map((v) => (
               <button
                 key={v.label}
@@ -158,7 +197,7 @@ export default function Menu() {
                 className="menu-view"
                 onClick={() => pickView(v)}
               >
-                {v.label}
+                {place(v.label)}
               </button>
             ))}
           </div>

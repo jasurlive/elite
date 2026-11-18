@@ -85,18 +85,18 @@ export const WALLS: WallDef[] = [
   { a: [10925, -1300], b: [10925, 6550], t: EXT, facade: { side: -1, brick: 'buff', to: 1050 } },
   { a: [6250, 6425], b: [11050, 6425], t: EXT },
   { a: [6375, 6300], b: [6375, 10450], t: EXT },
-  { a: [2200, 10325], b: [6500, 10325], t: EXT, openings: [door(3245, 900, 'start', -1)] }, // entrance
+  { a: [2200, 10325], b: [6500, 10325], t: EXT, openings: [door(3245, 900, 'start', 1)] }, // entrance (opens outward)
   { a: [2325, 6150], b: [2325, 10450], t: EXT },
   { a: [-250, 6275], b: [2450, 6275], t: EXT },
 
-  // partitions (doors open into rooms, except bath + storage which open out)
+  // partitions (doors open into rooms, except bath + storage which open out; entrance opens out too)
   { a: [6325, -1300], b: [6325, 6300], t: INT, openings: [door(6570, 900, 'end', -1)], facade: { side: 1, brick: 'buff', to: 1050 } }, // hall
-  { a: [6400, 1225], b: [10800, 1225], t: INT, openings: [{ kind: 'slide', at: 2200, width: 2800 }] }, // kitchen ↔ hall
+  { a: [6400, 1225], b: [10800, 1225], t: INT, openings: [{ kind: 'slide', at: 2200, width: 2000 }] }, // kitchen ↔ hall: glass, opens from the centre to both sides (leaves on the hall face; 2000 so each leaf parks fully inside the room)
   { a: [3175, 0], b: [3175, 6150], t: INT, openings: [door(5270, 900, 'end', 1)] }, // bedroom 1
   { a: [3250, 4375], b: [6250, 4375], t: INT, openings: [door(2200, 900, 'end', -1)] }, // bedroom 2
   { a: [2450, 6250], b: [3800, 6250], t: 200 },
   { a: [3724, 6208], b: [4567, 7051], t: INT, openings: [door(596, 700, 'end', -1, { mirror: true })] }, // storage
-  { a: [4525, 6990], b: [4525, 10200], t: INT, openings: [door(1970, 800, 'end', -1)] }, // bath
+  { a: [4525, 6990], b: [4525, 10200], t: INT, openings: [door(1460, 800, 'end', -1)] }, // bath: centred on the mirror opposite (both at z 8450)
   { a: [2450, 7925], b: [4450, 7925], t: INT },
 
   // balcony railing

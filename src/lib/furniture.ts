@@ -190,6 +190,19 @@ const washer = (x: number, z: number, f: Facing): Piece[] => {
   ]
 }
 
+// handle-less wall cabinet from y0 up to the ceiling; push-to-open doors shown only by thin seams on the front
+const wallUnit = (x0: number, z0: number, x1: number, z1: number, front: Facing, y0: number, doors = 1): Piece[] => {
+  const alongX = front === 'n' || front === 's'
+  const [a, b] = alongX ? [x0, x1] : [z0, z1]
+  const face = { n: z0 - 2, s: z1, e: x1, w: x0 - 2 }[front]
+  const pieces = [p(x0, z0, x1, z1, y0, WALL_H, 'linenWhite', 'box', 4)]
+  for (let i = 1; i < doors; i++) {
+    const m = a + ((b - a) * i) / doors
+    pieces.push(alongX ? p(m - 2, face, m + 2, face + 2, y0 + 10, WALL_H - 10, 'oat') : p(face, m - 2, face + 2, m + 2, y0 + 10, WALL_H - 10, 'oat'))
+  }
+  return pieces
+}
+
 // long low trough along the railing: a tidy row of greenery with small flowers between
 const planter = (x0: number, x1: number, z0: number, z1: number): Piece[] => {
   const zc = (z0 + z1) / 2
@@ -265,20 +278,42 @@ export const FURNITURE: Piece[] = [
   ...chair(7700, 3020, 'n'),
   ...plant(10450, 6000),
 
-  // ---------- kitchen ----------
-  // base units, with the washing machine built in next to the sink (shares its plumbing)
-  p(6400, -1050, 8980, -450, 100, 870, 'linenWhite', 'box', 6),
-  p(9580, -1050, 10100, -450, 100, 870, 'linenWhite', 'box', 6),
-  ...washer(9280, -450, 's'),
-  p(6420, -1030, 10080, -470, 0, 100, 'stone'),
-  p(6400, -1050, 10100, -430, 870, 910, 'oak', 'box', 6),
-  round(7300, -750, 260, 910, 915, 'charcoal'),
-  p(8350, -980, 8950, -620, 895, 912, 'stone', 'box', 30),
-  round(8650, -980, 18, 912, 1250, 'chrome'),
-  p(6500, -1050, 7900, -800, 1550, 1580, 'oak'),
-  p(6500, -1050, 7900, -800, 1900, 1930, 'oak'),
-  p(10150, -1050, 10800, -400, 0, 2150, 'linenWhite', 'box', 6),
-  p(10130, -900, 10150, -550, 950, 1500, 'oak'),
+  // ---------- kitchen: L along the west + north walls, from the sliding door round to the east wall ----------
+  // tall fridge-freezer bottom-left, doors facing east (clear of the sliding door, which starts at x 7600)
+  p(6400, 450, 7050, 1150, 0, 2050, 'white', 'box', 12),
+  p(7050, 460, 7054, 1140, 880, 895, 'oat'), // fridge / freezer split
+  p(7054, 480, 7076, 510, 1000, 1800, 'chrome'),
+  p(7054, 480, 7076, 510, 250, 820, 'chrome'),
+  // base units: west run (fridge → corner) + north run (corner → east wall), washer built in between the windows
+  p(6400, -450, 7000, 450, 100, 870, 'linenWhite', 'box', 6),
+  p(6400, -1050, 8300, -450, 100, 870, 'linenWhite', 'box', 6),
+  p(8900, -1050, 10800, -450, 100, 870, 'linenWhite', 'box', 6),
+  p(6420, -470, 6980, 430, 0, 100, 'stone'),
+  p(6420, -1030, 10780, -470, 0, 100, 'stone'),
+  ...washer(8600, -450, 's'),
+  // worktops
+  p(6400, -430, 7020, 450, 870, 910, 'oak', 'box', 6),
+  p(6400, -1050, 10800, -430, 870, 910, 'oak', 'box', 6),
+  // gas hob in the corner
+  p(6440, -880, 6960, -280, 910, 918, 'charcoal', 'box', 10),
+  ...[[6570, -730], [6570, -430], [6830, -730], [6830, -430]].map(([x, z]) => round(x, z, 65, 918, 935, 'stone')),
+  ...[-820, -700, -460, -340].map((z) => round(6925, z, 16, 918, 940, 'chrome')),
+  // sink under the first window
+  p(7367, -980, 7967, -620, 895, 912, 'stone', 'box', 30),
+  round(7667, -990, 18, 912, 1250, 'chrome'),
+  // handle-less wall cabinets, flush to the ceiling (no top for dust) and to the window reveals;
+  // the extractor is built into the cabinet over the hob, only its slim underside shows
+  ...wallUnit(6400, -1050, 6750, 450, 'e', 1600, 4),
+  ...wallUnit(6750, -1050, 7067, -700, 's', 1600),
+  ...wallUnit(6400, 450, 7050, 1150, 'e', 2050), // over the fridge
+  p(6420, -860, 6730, -300, 1590, 1600, 'stone'),
+  round(10600, -850, 70, 910, 1030, 'clay'), // herbs on the worktop
+  round(10600, -850, 110, 1000, 1200, 'sage', 'sphere'),
+  // breakfast table for two against the east wall, in the free corner right of the sliding door
+  p(10100, 0, 10800, 800, 720, 750, 'oak', 'box', 8),
+  ...legs(10100, 0, 10800, 800, 720, 'oak', 30, 30),
+  ...chair(9830, 170, 'e'),
+  ...chair(9830, 630, 'e'),
 
   // ---------- corridor ----------
   p(5000, 7000, 5850, 9700, 0, 8, 'rug', 'box', 4),
@@ -290,17 +325,18 @@ export const FURNITURE: Piece[] = [
   ...wardrobe(2450, 6350, 3050, 7850, 'e', WALL_H - 5, 2),
   ...wardrobe(3050, 7250, 4450, 7850, 'n', WALL_H - 5, 2),
 
-  // ---------- bath: open walk-in shower (no glass) bottom-right, wc on the left wall facing it ----------
-  p(3500, 9400, 4450, 10200, 0, 40, 'white', 'box', 8),
-  round(4380, 9800, 18, 1100, 2050, 'chrome'), // shower riser + rain head
-  round(4250, 9800, 140, 2050, 2070, 'chrome'),
-  // wall-hung wc, built-in cistern behind it
-  p(2450, 9500, 2620, 10100, 0, 1100, 'linenWhite', 'box', 6),
-  p(2620, 9630, 3150, 9970, 260, 640, 'white', 'box', 140),
+  // ---------- bath: vanity + mirror facing the door (west wall, tight to the north corner);
+  // wc + shower side by side on the south wall, both facing north ----------
+  // wall-hung wc, bowl tight against the south wall
+  p(2730, 9670, 3070, 10200, 260, 640, 'white', 'box', 140),
+  // open walk-in shower (no glass, no tray: floor tiles run through) in the south-east corner, head on the south wall
+  p(3400, 10090, 4350, 10150, 0, 3, 'chrome'), // slim linear drain along the wall
+  round(3875, 10130, 18, 1100, 2050, 'chrome'), // shower riser + rain head
+  round(3875, 9990, 140, 2050, 2070, 'chrome'),
   // vanity + mirror
-  p(3250, 8000, 4150, 8480, 450, 820, 'oak', 'box', 8),
-  p(3400, 8050, 4000, 8430, 820, 900, 'white', 'box', 40),
-  p(3300, 8000, 4100, 8015, 1100, 1900, 'mirror'),
+  p(2450, 8000, 2930, 8900, 450, 820, 'oak', 'box', 8),
+  p(2500, 8150, 2880, 8750, 820, 900, 'white', 'box', 40),
+  p(2450, 8000, 2465, 8900, 1100, 1900, 'mirror'),
 
   // ---------- balcony: planting only, kept low and out of the way of the glass door ----------
   ...planter(4000, 6150, -1220, -1010),
