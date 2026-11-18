@@ -1,7 +1,7 @@
 import i18n from 'i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next, useTranslation } from 'react-i18next'
-import type { ComponentType, SVGProps } from 'react'
+import { useSyncExternalStore, type ComponentType, type SVGProps } from 'react'
 import { GB, RU, UZ } from 'country-flag-icons/react/3x2'
 import en from './en'
 import ru from './ru'
@@ -33,7 +33,14 @@ const syncHtmlLang = (lng: string) => document.documentElement.setAttribute('lan
 syncHtmlLang(i18n.resolvedLanguage ?? 'en')
 i18n.on('languageChanged', syncHtmlLang)
 
-export const currentLang = () => (i18n.resolvedLanguage ?? 'en') as Lang
+// the current language as a subscribed value: a plain i18n.resolvedLanguage read inside a component
+// gets cached once by the React Compiler and never updates
+const subscribe = (onChange: () => void) => {
+  i18n.on('languageChanged', onChange)
+  return () => i18n.off('languageChanged', onChange)
+}
+const snapshot = () => (i18n.resolvedLanguage ?? 'en') as Lang
+export const useLang = () => useSyncExternalStore(subscribe, snapshot)
 export default i18n
 
 // translated name of a room / camera view: its label is the key (via its url slug)

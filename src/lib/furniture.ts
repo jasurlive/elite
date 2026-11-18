@@ -92,19 +92,54 @@ const nightstand = (x0: number, z0: number): Piece[] => [
   round(x0 + 225, z0 + 200, 140, 760, 960, 'linenWhite'),
 ]
 
-// doors on the side that faces the room, hung in pairs; pulls meet in the middle of each pair
-const wardrobe = (x0: number, z0: number, x1: number, z1: number, front: Facing, h = 2300, pairs = 1): Piece[] => {
+// sliding-door wardrobe: hollow carcass + panels on two tracks inside the footprint, so nothing swings into the room
+// open = index of a panel shown slid aside (over its neighbour), revealing a hanging rail, clothes, shelves and boxes
+const CLOTHES: Color[] = ['sage', 'linen', 'charcoal', 'sand', 'clay', 'oat', 'white']
+const wardrobe = (x0: number, z0: number, x1: number, z1: number, front: Facing, h = WALL_H - 5, panels = 2, open?: number): Piece[] => {
   const alongX = front === 'n' || front === 's'
-  const [a, b] = alongX ? [x0, x1] : [z0, z1]
-  const face = { n: z0 - 25, s: z1, e: x1, w: x0 - 25 }[front]
-  const strip = (m0: number, m1: number, y0: number, y1: number, depth: number, color: Color) =>
-    alongX ? p(m0, face, m1, face + depth, y0, y1, color) : p(face, m0, face + depth, m1, y0, y1, color)
-  const pieces = [p(x0, z0, x1, z1, 60, h, 'linenWhite', 'box', 8), p(x0 + 20, z0 + 20, x1 - 20, z1 - 20, 0, 60, 'oak')]
-  const pair = (b - a) / pairs
-  for (let i = 0; i < pairs; i++) {
-    const mid = a + (i + 0.5) * pair
-    pieces.push(strip(mid - 40, mid - 20, 900, 1500, 25, 'oak'), strip(mid + 20, mid + 40, 900, 1500, 25, 'oak'))
-    if (i > 0) pieces.push(strip(a + i * pair - 2, a + i * pair + 2, 70, h - 10, 6, 'oat')) // seam between pairs
+  const [W, D] = alongX ? [x1 - x0, z1 - z0] : [z1 - z0, x1 - x0]
+  const [mx, mz] = [(x0 + x1) / 2, (z0 + z1) / 2]
+  const [cx, cz] = { n: [mx, z0], s: [mx, z1], e: [x1, mz], w: [x0, mz] }[front]
+  // local frame: u across the front (-W/2 … W/2), v forward (front face at 0, back wall at -D)
+  const b = local(cx, cz, front)
+  const T = 50 // depth taken by the two door tracks
+  const [l, r] = [-W / 2, W / 2]
+  const pieces = [
+    b(l, r, -D, -D + 18, 0, h, 'linenWhite'), // back
+    b(l, l + 18, -D, 0, 0, h, 'linenWhite'), // sides
+    b(r - 18, r, -D, 0, 0, h, 'linenWhite'),
+    b(l, r, -D, 0, h - 30, h, 'linenWhite'), // top + track
+    b(l, r, -D, 0, 0, 40, 'oat'), // bottom track
+  ]
+  const w = W / panels
+  for (let i = 0; i < panels; i++) {
+    const outer = i % 2 === 1 // alternate tracks, so neighbours slide past each other
+    const [v0, v1] = outer ? [-24, -2] : [-T, -T + 22]
+    const shift = i === open ? (i > 0 ? -w : w) : 0
+    const u0 = l + i * w - (i > 0 ? 10 : 0) + shift
+    const u1 = l + (i + 1) * w + (i < panels - 1 ? 10 : 0) + shift
+    pieces.push(
+      b(u0, u1, v0, v1, 40, h - 30, 'linenWhite', 'box', 4),
+      b(u0, u0 + 14, v1, v1 + 2, 40, h - 30, 'oat'), // slim edge profiles = the grip, no handles
+      b(u1 - 14, u1, v1, v1 + 2, 40, h - 30, 'oat'),
+    )
+  }
+  if (open !== undefined) {
+    const [ua, ub] = [l + open * w + 18, l + (open + 1) * w - 18]
+    const [back, mid] = [-D + 18, (-D - T) / 2]
+    pieces.push(
+      b(ua, ub, back, -T, h - 420, h - 400, 'linenWhite'), // top shelf
+      b(ua + 30, ua + 330, back + 30, -T - 40, h - 400, h - 180, 'sand', 'box', 6), // storage boxes on it
+      b(ua + 360, ua + 620, back + 30, -T - 40, h - 400, h - 220, 'oat', 'box', 6),
+      b(ua, ub, mid - 10, mid + 10, h - 500, h - 480, 'chrome'), // hanging rail
+      b(ua, ub, back, -T, 300, 318, 'linenWhite'), // shoe shelf
+    )
+    let k = 0
+    for (let u = ua + 60; u < ub - 60; u += 75, k++) {
+      const len = [900, 1100, 750, 1250, 1000][k % 5]
+      pieces.push(b(u, u + 35, mid - 220, mid + 220, h - 480 - len, h - 480, CLOTHES[k % CLOTHES.length], 'box', 14))
+    }
+    for (let u = ua + 40; u + 120 < ub; u += 160) pieces.push(b(u, u + 110, back + 60, back + 330, 318, 420, k++ % 2 ? 'charcoal' : 'clay', 'box', 30))
   }
   return pieces
 }
@@ -233,7 +268,7 @@ export const FURNITURE: Piece[] = [
   ...deskLamp(2950, 1450),
   p(900, 500, 2300, 2300, 0, 8, 'rug', 'box', 4),
   round(1300, 5150, 300, 0, 450, 'sand', 'sphere'),
-  ...wardrobe(0, 5550, 1800, 6150, 'n'),
+  ...wardrobe(0, 5550, 1800, 6150, 'n'), // floor to ceiling, sliding doors
 
   // ---------- bedroom + coding workspace ----------
   ...bed(3250, 1400, 3000, 2050),
@@ -248,35 +283,24 @@ export const FURNITURE: Piece[] = [
   ...deskLamp(6150, 1520),
   ...officeChair(5200, 900, 'e'),
 
-  // ---------- hall ----------
-  p(8000, 2700, 10400, 5300, 0, 8, 'rug', 'box', 4),
-  // sofa
-  p(9900, 2800, 10780, 5100, 90, 400, 'oat', 'box', 30),
-  ...legs(9900, 2800, 10780, 5100, 90, 'oak', 35, 60),
-  p(10560, 2800, 10780, 5100, 400, 820, 'oat', 'box', 50),
-  p(9900, 2800, 10560, 2960, 400, 620, 'oat', 'box', 40),
-  p(9900, 4940, 10560, 5100, 400, 620, 'oat', 'box', 40),
-  p(9930, 2980, 10560, 3950, 400, 520, 'linen', 'box', 50),
-  p(9930, 3950, 10560, 4920, 400, 520, 'linen', 'box', 50),
-  p(10380, 3100, 10540, 3600, 520, 900, 'sand', 'box', 60),
-  // coffee table + side lamp
-  round(9000, 3950, 450, 360, 400, 'oak'),
-  round(9000, 3950, 70, 0, 360, 'oak'),
-  round(10560, 5450, 160, 0, 30, 'charcoal'),
-  round(10560, 5450, 15, 30, 1450, 'charcoal'),
-  round(10560, 5450, 210, 1450, 1720, 'linenWhite'),
-  // tv sideboard
-  p(6400, 2900, 6850, 4600, 150, 600, 'oakLight', 'box', 10),
-  ...legs(6400, 2900, 6850, 4600, 150, 'oak', 30, 30),
-  // tv on the west wall: side-on to the daylight from the sliding door, so no reflections
-  p(6470, 3025, 6510, 4475, 850, 1680, 'charcoal', 'box', 6),
-  // dining
-  round(7700, 2350, 550, 720, 755, 'oak'),
-  round(7700, 2350, 60, 40, 720, 'oak'),
-  round(7700, 2350, 250, 0, 40, 'oak'),
-  ...chair(7700, 1680, 's'),
-  ...chair(7700, 3020, 'n'),
-  ...plant(10450, 6000),
+  // ---------- hall = family living room: one long sofa + tv, nothing else (minimal) ----------
+  // long straight sofa along the whole east wall (z 1400–6300): seats the family + guests, pull-out bed for overnight guests
+  p(7900, 2600, 9900, 5100, 0, 8, 'rug', 'box', 4),
+  p(9850, 1400, 10780, 6300, 90, 400, 'oat', 'box', 30),
+  ...legs(9850, 1400, 10780, 6300, 90, 'oak', 35, 60),
+  p(10560, 1400, 10780, 6300, 400, 820, 'oat', 'box', 50), // back along the wall
+  p(9850, 1400, 10560, 1560, 400, 620, 'oat', 'box', 40), // arms
+  p(9850, 6140, 10560, 6300, 400, 620, 'oat', 'box', 40),
+  ...[0, 1, 2, 3].map((i) => p(9880, 1580 + i * 1140, 10560, 1580 + (i + 1) * 1140 - 20, 400, 520, 'linen', 'box', 50)),
+  p(10380, 1750, 10540, 2250, 520, 900, 'sand', 'box', 60),
+  p(10380, 5450, 10540, 5950, 520, 900, 'sage', 'box', 60),
+  // low oak coffee table in front of the middle of the sofa
+  p(8750, 3150, 9350, 4550, 360, 400, 'oak', 'box', 12),
+  ...legs(8750, 3150, 9350, 4550, 360, 'oak', 35, 50),
+  // wall-hung media unit (nothing on the floor to clean around) + tv, side-on to the daylight from the sliding door
+  p(6400, 3050, 6820, 4750, 300, 700, 'oakLight', 'box', 10),
+  p(6400, 3175, 6440, 4625, 950, 1770, 'charcoal', 'box', 6),
+  ...plant(6700, 1750),
 
   // ---------- kitchen: L along the west + north walls, from the sliding door round to the east wall ----------
   // tall fridge-freezer bottom-left, doors facing east (clear of the sliding door, which starts at x 7600)
@@ -309,11 +333,6 @@ export const FURNITURE: Piece[] = [
   p(6420, -860, 6730, -300, 1590, 1600, 'stone'),
   round(10600, -850, 70, 910, 1030, 'clay'), // herbs on the worktop
   round(10600, -850, 110, 1000, 1200, 'sage', 'sphere'),
-  // breakfast table for two against the east wall, in the free corner right of the sliding door
-  p(10100, 0, 10800, 800, 720, 750, 'oak', 'box', 8),
-  ...legs(10100, 0, 10800, 800, 720, 'oak', 30, 30),
-  ...chair(9830, 170, 'e'),
-  ...chair(9830, 630, 'e'),
 
   // ---------- corridor ----------
   p(5000, 7000, 5850, 9700, 0, 8, 'rug', 'box', 4),
@@ -321,9 +340,9 @@ export const FURNITURE: Piece[] = [
   ...legs(5900, 8200, 6250, 9700, 120, 'oak', 30, 30),
   p(6230, 8400, 6250, 9500, 1100, 1900, 'mirror'),
 
-  // ---------- storage (old wc): L of floor-to-ceiling cupboards, west + south walls; door on the cut stays clear ----------
-  ...wardrobe(2450, 6350, 3050, 7850, 'e', WALL_H - 5, 2),
-  ...wardrobe(3050, 7250, 4450, 7850, 'n', WALL_H - 5, 2),
+  // ---------- storage (old wc): L of floor-to-ceiling sliding-door cupboards, west + south walls; door on the cut stays clear ----------
+  ...wardrobe(2450, 6350, 3050, 7850, 'e'),
+  ...wardrobe(3050, 7250, 4450, 7850, 'n', WALL_H - 5, 2, 1), // shown with one door slid open
 
   // ---------- bath: vanity + mirror facing the door (west wall, tight to the north corner);
   // wc + shower side by side on the south wall, both facing north ----------
@@ -333,10 +352,19 @@ export const FURNITURE: Piece[] = [
   p(3400, 10090, 4350, 10150, 0, 3, 'chrome'), // slim linear drain along the wall
   round(3875, 10130, 18, 1100, 2050, 'chrome'), // shower riser + rain head
   round(3875, 9990, 140, 2050, 2070, 'chrome'),
-  // vanity + mirror
-  p(2450, 8000, 2930, 8900, 450, 820, 'oak', 'box', 8),
-  p(2500, 8150, 2880, 8750, 820, 900, 'white', 'box', 40),
-  p(2450, 8000, 2465, 8900, 1100, 1900, 'mirror'),
+  // wall-hung oak vanity (one wide drawer, finger groove) with a stone top and a round white basin sitting on it
+  p(2450, 8000, 2930, 8900, 450, 800, 'oak', 'box', 8),
+  p(2930, 8020, 2934, 8880, 770, 780, 'charcoal'), // finger groove under the top
+  p(2450, 8000, 2950, 8900, 800, 830, 'stone', 'box', 6),
+  round(2700, 8450, 210, 830, 960, 'white'),
+  round(2700, 8450, 175, 961, 963, 'stone'), // inside of the bowl
+  // wall-mounted spout over the bowl + small lever beside it
+  p(2450, 8435, 2760, 8465, 1060, 1085, 'chrome', 'box', 10),
+  round(2500, 8580, 14, 1060, 1120, 'chrome'),
+  // mirror cabinet above: shelves behind two mirrored doors
+  p(2450, 8000, 2600, 8900, 1150, 1900, 'linenWhite', 'box', 6),
+  p(2600, 8000, 2606, 8448, 1150, 1900, 'mirror'),
+  p(2600, 8452, 2606, 8900, 1150, 1900, 'mirror'),
 
   // ---------- balcony: planting only, kept low and out of the way of the glass door ----------
   ...planter(4000, 6150, -1220, -1010),

@@ -7,7 +7,7 @@ import { useShortcuts } from "../hooks/LOCAL/useShortcuts";
 import { setView, slug, toggleUtilities, useHouse } from "../hooks/LOCAL/useHouse";
 import ControlsHelp from "./ControlsHelp";
 import { useTranslation } from "react-i18next";
-import i18n, { LANGUAGES, currentLang, usePlace } from "../i18n";
+import i18n, { LANGUAGES, useLang, usePlace } from "../i18n";
 
 const readCollapsed = () => {
   try {
@@ -17,7 +17,7 @@ const readCollapsed = () => {
   }
 };
 
-type Panel = "views" | "lang" | "settings" | null;
+type Panel = "views" | "settings" | null;
 
 // fullscreen state, kept in sync when the user leaves with Esc; iPhone Safari has no fullscreen API
 const canFullscreen = typeof document !== "undefined" && document.fullscreenEnabled;
@@ -46,11 +46,8 @@ export default function Menu() {
   const togglePanel = (p: Panel) => setPanel((open) => (open === p ? null : p));
   const { t } = useTranslation();
   const place = usePlace();
-  const lang = LANGUAGES.find((l) => l.code === currentLang()) ?? LANGUAGES[0];
-  const pickLang = (code: string) => {
-    void i18n.changeLanguage(code); // the detector saves it to localStorage
-    setPanel(null);
-  };
+  const current = useLang();
+  const pickLang = (code: string) => void i18n.changeLanguage(code); // the detector saves it to localStorage
 
   const toggleMenu = () => {
     setCollapsed((value) => {
@@ -121,16 +118,6 @@ export default function Menu() {
           <span className="menu-label">{t("menu.plan")}</span>
         </NavLink>
 
-        <button
-          type="button"
-          className={`menu-item menu-bottom ${panel === "lang" ? "active" : ""}`}
-          onClick={() => togglePanel("lang")}
-          aria-expanded={panel === "lang"}
-          title={t("lang.label")}
-        >
-          <span className="menu-icon"><lang.flag className="menu-flag" /></span>
-          <span className="menu-label">{t("lang.name")}</span>
-        </button>
 
         <button
           type="button"
@@ -148,6 +135,25 @@ export default function Menu() {
 
       {panel === "settings" && (
         <div className="menu-flyout menu-settings" role="dialog" aria-label={t("menu.settingsTitle")}>
+          <section className="help-section">
+            <h3 className="help-title">{t("lang.label")}</h3>
+            <div className="lang-picker" role="radiogroup" aria-label={t("lang.label")}>
+              {LANGUAGES.map(({ code, flag: Flag }) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={code === current}
+                  className="lang-option"
+                  lang={code}
+                  onClick={() => pickLang(code)}
+                >
+                  <Flag className="lang-flag" />
+                  {t("lang.name", { lng: code })}
+                </button>
+              ))}
+            </div>
+          </section>
           {canFullscreen && (
             <button
               type="button"
@@ -163,25 +169,6 @@ export default function Menu() {
             </button>
           )}
           <ControlsHelp view={view} />
-        </div>
-      )}
-
-      {panel === "lang" && (
-        <div className="menu-flyout menu-langs" role="menu" aria-label={t("lang.label")}>
-          {LANGUAGES.map(({ code, flag: Flag }) => (
-            <button
-              key={code}
-              type="button"
-              role="menuitemradio"
-              aria-checked={code === lang.code}
-              className="menu-view menu-lang"
-              lang={code}
-              onClick={() => pickLang(code)}
-            >
-              <Flag className="menu-flag" />
-              {t("lang.name", { lng: code })}
-            </button>
-          ))}
         </div>
       )}
 

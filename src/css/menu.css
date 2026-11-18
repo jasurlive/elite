@@ -236,11 +236,6 @@ button.menu-item {
     bottom: 10px; /* next to the Settings item */
     width: 320px;
   }
-
-  .menu-langs {
-    bottom: 66px; /* next to the language item, just above Settings */
-    min-width: 190px;
-  }
 }
 
 @media (max-width: 768px) {
@@ -259,19 +254,43 @@ button.menu-item {
   }
 }
 
-/* ---------- language: flag icons ---------- */
+/* ---------- settings: language picker (three flag tiles) ---------- */
 
-.menu-flag {
-  width: 22px;
-  height: auto;
-  border-radius: 3px;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 15%, transparent);
+.lang-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
 }
 
-.menu-lang {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.lang-option {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  font-size: 13px;
+  color: var(--text);
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.lang-option:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+
+.lang-option[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.lang-flag {
+  width: 30px;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 15%, transparent);
 }
 
 /* on/off item (utilities): accent icon + small dot instead of the "current page" look */
